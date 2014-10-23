@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -41,10 +41,17 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
   protected $tables = array();
   protected $interval = '10 SECOND';
 
+  protected $altered_name;
+  protected $altered_by;
+  protected $altered_by_id;
+
   // detail/summary report ids
   protected $detail;
   protected $summary;
 
+  /**
+   *
+   */
   function __construct() {
     // don’t display the ‘Add these Contacts to Group’ button
     $this->_add2groupSupported = FALSE;
@@ -56,6 +63,10 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     $this->log_date    = CRM_Utils_Request::retrieve('log_date', 'String', CRM_Core_DAO::$_nullObject);
     $this->cid         = CRM_Utils_Request::retrieve('cid', 'Integer', CRM_Core_DAO::$_nullObject);
     $this->raw         = CRM_Utils_Request::retrieve('raw', 'Boolean', CRM_Core_DAO::$_nullObject);
+
+    $this->altered_name  = CRM_Utils_Request::retrieve('alteredName', 'String',  CRM_Core_DAO::$_nullObject);
+    $this->altered_by    = CRM_Utils_Request::retrieve('alteredBy',   'String',  CRM_Core_DAO::$_nullObject);
+    $this->altered_by_id = CRM_Utils_Request::retrieve('alteredById', 'Integer', CRM_Core_DAO::$_nullObject);
 
     parent::__construct();
 
@@ -101,8 +112,15 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     );
   }
 
+  /**
+   * @param bool $applyLimit
+   */
   function buildQuery($applyLimit = TRUE) {}
 
+  /**
+   * @param $sql
+   * @param $rows
+   */
   function buildRows($sql, &$rows) {
     // safeguard for when there aren’t any log entries yet
     if (!$this->log_conn_id or !$this->log_date) {
@@ -120,6 +138,11 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     }
   }
 
+  /**
+   * @param $table
+   *
+   * @return array
+   */
   protected function diffsInTable($table) {
     $rows = array();
 
@@ -153,9 +176,9 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
         }
 
         // special-case for multiple values. Also works for CRM-7251: preferred_communication_method
-        if ((substr($from, 0, 1) == CRM_Core_DAO::VALUE_SEPARATOR && 
-            substr($from, -1, 1) == CRM_Core_DAO::VALUE_SEPARATOR) || 
-          (substr($to, 0, 1) == CRM_Core_DAO::VALUE_SEPARATOR && 
+        if ((substr($from, 0, 1) == CRM_Core_DAO::VALUE_SEPARATOR &&
+            substr($from, -1, 1) == CRM_Core_DAO::VALUE_SEPARATOR) ||
+          (substr($to, 0, 1) == CRM_Core_DAO::VALUE_SEPARATOR &&
             substr($to, -1, 1) == CRM_Core_DAO::VALUE_SEPARATOR)) {
           $froms = $tos = array();
           foreach (explode(CRM_Core_DAO::VALUE_SEPARATOR, trim($from, CRM_Core_DAO::VALUE_SEPARATOR)) as $val) {
@@ -199,22 +222,16 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
       2 => array($this->log_date, 'String'),
     );
 
-    // let the template know who updated whom when
-    $dao = CRM_Core_DAO::executeQuery($this->whoWhomWhenSql(), $params);
-    if ($dao->fetch()) {
-      $this->assign('who_url', CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$dao->who_id}"));
-      $this->assign('whom_url', CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$dao->whom_id}"));
-      $this->assign('who_name', $dao->who_name);
-      $this->assign('whom_name', $dao->whom_name);
-    }
+    $this->assign('whom_url', CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->cid}"));
+    $this->assign('who_url',  CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->altered_by_id}"));
+    $this->assign('whom_name', $this->altered_name);
+    $this->assign('who_name',  $this->altered_by);
+
     $this->assign('log_date', CRM_Utils_Date::mysqlToIso($this->log_date));
 
     $q = "reset=1&log_conn_id={$this->log_conn_id}&log_date={$this->log_date}";
     $this->assign('revertURL', CRM_Report_Utils_Report::getNextUrl($this->detail, "$q&revert=1", FALSE, TRUE));
     $this->assign('revertConfirm', ts('Are you sure you want to revert all these changes?'));
   }
-
-  // redefine this accordingly in ancestors for buildQuickForm()’s sake
-  protected function whoWhomWhenSql() {}
 }
 

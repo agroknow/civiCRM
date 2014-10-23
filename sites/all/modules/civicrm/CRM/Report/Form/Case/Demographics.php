@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -40,6 +40,13 @@ class CRM_Report_Form_Case_Demographics extends CRM_Report_Form {
   protected $_emailField = FALSE;
 
   protected $_phoneField = FALSE;
+
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
     $this->_columns = array(
       'civicrm_contact' =>
@@ -68,8 +75,10 @@ class CRM_Report_Form_Case_Demographics extends CRM_Report_Form {
         ),
         'filters' =>
         array(
-          'sort_name' =>
-          array('title' => ts('Contact Name')),
+          'sort_name' => array(
+            'title' => ts('Contact Name'),
+            'operatorType' => CRM_Report_Form::OP_STRING,
+          ),
           'contact_type' =>
           array('title' => ts('Contact Type'),
             'operatorType' => CRM_Report_Form::OP_SELECT,
@@ -127,7 +136,7 @@ class CRM_Report_Form_Case_Demographics extends CRM_Report_Form {
                                         'options' => CRM_Core_PseudoConstant::country( ),
                                         ),
                                  'state_province_id' =>
-                                 array( 'title'   => ts( 'State / Province' ),
+                                 array( 'title'   => ts( 'State/Province' ),
                                         'operatorType' => CRM_Report_Form::OP_MULTISELECT,
                                         'options' => CRM_Core_PseudoConstant::stateProvince( ), ),
                                  ),
@@ -180,24 +189,9 @@ class CRM_Report_Form_Case_Demographics extends CRM_Report_Form {
           ),
         ),
       ),
-      'civicrm_group' =>
-      array(
-        'dao' => 'CRM_Contact_DAO_Group',
-        'alias' => 'cgroup',
-        'filters' =>
-        array(
-          'gid' =>
-          array(
-            'name' => 'group_id',
-            'title' => ts('Group'),
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'group' => TRUE,
-            'options' => CRM_Core_PseudoConstant::group(),
-          ),
-        ),
-      ),
     );
 
+    $this->_groupFilter = TRUE;
     $this->_tagFilter = TRUE;
 
     $open_case_val = CRM_Core_OptionGroup::getValue('activity_type', 'Open Case', 'name');
@@ -249,9 +243,7 @@ where (cg.extends='Contact' OR cg.extends='Individual' OR cg.extends_entity_colu
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
             if ($tableName == 'civicrm_email') {
               $this->_emailField = TRUE;
             }
@@ -270,6 +262,13 @@ where (cg.extends='Contact' OR cg.extends='Individual' OR cg.extends_entity_colu
     $this->_select = "SELECT " . implode(', ', $select) . " ";
   }
 
+  /**
+   * @param $fields
+   * @param $files
+   * @param $self
+   *
+   * @return array
+   */
   static function formRule($fields, $files, $self) {
     $errors = $grouping = array();
     return $errors;
@@ -321,7 +320,7 @@ where (cg.extends='Contact' OR cg.extends='Individual' OR cg.extends_entity_colu
             $from     = CRM_Utils_Array::value("{$fieldName}_from", $this->_params);
             $to       = CRM_Utils_Array::value("{$fieldName}_to", $this->_params);
 
-            $clause = $this->dateClause($field['dbAlias'], $relative, $from, $to, CRM_Utils_type::T_DATE);
+            $clause = $this->dateClause($field['dbAlias'], $relative, $from, $to, CRM_Utils_Type::T_DATE);
           }
           else {
             $op = CRM_Utils_Array::value("{$fieldName}_op", $this->_params);
@@ -383,6 +382,9 @@ where (cg.extends='Contact' OR cg.extends='Individual' OR cg.extends_entity_colu
     $this->endPostProcess($rows);
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;
@@ -443,6 +445,12 @@ where (cg.extends='Contact' OR cg.extends='Individual' OR cg.extends_entity_colu
     }
   }
 
+  /**
+   * @param $fname
+   * @param $val
+   *
+   * @return null|string
+   */
   function getCustomFieldLabel($fname, $val) {
     $query = "
 SELECT v.label

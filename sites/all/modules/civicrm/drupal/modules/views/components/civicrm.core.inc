@@ -243,6 +243,29 @@ function _civicrm_core_data(&$data, $enabled) {
       'handler' => 'views_handler_sort',
     ),
   );
+  $data['civicrm_contact']['preferred_communication_method'] = array(
+    // The item it appears as on the UI,
+    'title' => t('Preferred communication method'),
+    // The help that appears on the UI,
+    'real field' => 'preferred_communication_method',
+    'help' => t('Prefix'),
+    'field' => array(
+      'handler' => 'civicrm_handler_field_pseudo_constant',
+      'click sortable' => TRUE,
+      'pseudo class' => 'CRM_Core_PseudoConstant',
+      'pseudo method' => 'get',
+      'dao class' => 'CRM_Contact_BAO_Contact',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'civicrm_handler_filter_pseudo_constant',
+      'pseudo class' => 'CRM_Core_PseudoConstant',
+      'pseudo method' => 'get',
+      'dao class' => 'CRM_Contact_BAO_Contact',
+    ),
+  );
   // Prefix
   $data['civicrm_contact']['prefix_id'] = array(
     // The item it appears as on the UI,
@@ -611,6 +634,23 @@ function _civicrm_core_data(&$data, $enabled) {
      ),
   );
 
+  // Last modified date
+  $data['civicrm_contact']['modified_date'] = array(
+    'title' => t('Modified date'),
+    'help' => t('The date the contact\'s record was last modified.'),
+    'field' => array(
+      'handler' => 'civicrm_handler_field_datetime',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'civicrm_handler_filter_datetime',
+      'is date' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'civicrm_handler_sort_date',
+     ),
+  );
+
   // add the other generic fields
   $objType = 'Individual';
   $fields = CRM_Contact_BAO_Contact::exportableFields($objType);
@@ -836,7 +876,7 @@ function _civicrm_core_data(&$data, $enabled) {
 
   //STATE OR PROVINCE
   $data['civicrm_address']['state_province'] = array(
-    'title' => t('State / Province'),
+    'title' => t('State/Province'),
     'real field' => 'state_province_id',
     'help' => t('The State or Province of the Address'),
     'field' => array(
@@ -994,6 +1034,47 @@ function _civicrm_core_data(&$data, $enabled) {
   $fields = CRM_Core_DAO_Address::fields();
 
   civicrm_views_add_fields($fields, $data['civicrm_address'], 'civicrm_address');
+
+  // CIVICRM_NOTE table
+
+  $data['civicrm_note']['table']['group'] = t('CiviCRM Note');
+
+  // Explain how this table joins to others.
+  $data['civicrm_note']['table']['join'] = array(
+    // Directly links to contact table.
+    'civicrm_contact' => array(
+      'left_field' => 'id',
+      'field' => 'entity_id',
+      'extra' => array(
+        array(
+          'field' => 'entity_table',
+          'value' => 'civicrm_contact',
+          'numeric' => FALSE,
+        ),
+      ),
+    ),
+  );
+
+  // NOTE TEXT
+  $data['civicrm_note']['note'] = array(
+    'title' => t('Note'),
+    'help' => t('Note'),
+    'field' => array(
+      'handler' => 'civicrm_handler_field_markup',
+      'click sortable' => TRUE,
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+      'allow empty' => TRUE,
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+
 
   // CHILLING OUT AT THE CIVICRM_EMAIL TABLE
 
@@ -2249,6 +2330,11 @@ function _civicrm_core_data(&$data, $enabled) {
 
   $data['civicrm_group']['table']['group'] = t('CiviCRM Groups');
 
+  $data['civicrm_group']['table']['base'] = array(
+    'field' => 'id',
+    'title' => t('CiviCRM Groups'),
+    'help' => t("View displays CiviCRM Groups."),
+  );
 
   $data['civicrm_group']['table']['join']['civicrm_contact'] = array(
     'left_table' => 'civicrm_group_contact',
@@ -2528,7 +2614,7 @@ function _civicrm_core_data(&$data, $enabled) {
   while ($dao->fetch()) {
     // call getTree using $dao->id as groupID and $dao->extends as entityType
 
-    $data = civicrm_views_custom_data_cache($data, $dao->extends, $dao->id, $dao->extends_entity_column_value, $dao->style);
+    $data = civicrm_views_custom_data_cache($data, $dao->extends, $dao->id, $dao->extends_entity_column_value);
   }
 }
 

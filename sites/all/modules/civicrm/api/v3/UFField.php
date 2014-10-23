@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -32,7 +32,7 @@
  * @package CiviCRM_APIv3
  * @subpackage API_UF
  *
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * @version $Id: UFField.php 30171 2010-10-14 09:11:27Z mover $
  *
  */
@@ -77,7 +77,7 @@ function civicrm_api3_uf_field_create($params) {
 
   $fieldId = CRM_Utils_Array::value('id', $params);
   if (!empty($fieldId)) {
-    $UFField = new CRM_core_BAO_UFField();
+    $UFField = new CRM_Core_BAO_UFField();
     $UFField->id = $fieldId;
     if ($UFField->find(TRUE)) {
       $ids['uf_group'] = $UFField->uf_group_id;
@@ -123,6 +123,7 @@ function _civicrm_api3_uf_field_create_spec(&$params) {
     'api.default' => TRUE,
   );
   $params['created_id']['api.default'] = 'user_contact_id';
+  $params['created_id']['title']  = 'Created By';
   $params['is_active']['api.default'] = TRUE;
 }
 

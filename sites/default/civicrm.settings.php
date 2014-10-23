@@ -132,8 +132,8 @@ define('CIVICRM_LOGGING_DSN', CIVICRM_DSN);
 
 global $civicrm_root;
 
-$civicrm_root = '/var/www/gkista/crms/civi/sites/all/modules/civicrm';
-define( 'CIVICRM_TEMPLATE_COMPILEDIR', '/var/www/gkista/crms/civi/sites/default/files/civicrm/templates_c/' );
+$civicrm_root = '/var/www/civiCRM/sites/all/modules/civicrm';
+define( 'CIVICRM_TEMPLATE_COMPILEDIR', '/var/www/civiCRM/sites/default/files/civicrm/templates_c/' );
 
 /**
  * Site URLs:
@@ -160,7 +160,7 @@ define( 'CIVICRM_TEMPLATE_COMPILEDIR', '/var/www/gkista/crms/civi/sites/default/
  *      define( 'CIVICRM_UF_BASEURL' , 'http://www.example.com/joomla/' );
  *
  */
-define( 'CIVICRM_UF_BASEURL'      , 'http://gkista.agroknow.gr/crms/civi/' );
+define( 'CIVICRM_UF_BASEURL'      , 'http://localhost/civiCRM/' );
 
 /*
  * If you are using any CiviCRM script in the bin directory that

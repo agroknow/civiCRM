@@ -40,7 +40,7 @@ function activity_get_expectedresult(){
   'values' => array(
       '0' => array(
           'id' => '1',
-          'activity_type_id' => '46',
+          'activity_type_id' => '49',
           'subject' => 'test activity type id',
           'activity_date_time' => '2011-06-02 14:36:13',
           'duration' => '120',
@@ -79,11 +79,18 @@ function activity_get_expectedresult(){
                       'nick_name' => '',
                       'legal_name' => '',
                       'image_URL' => '',
+                      'preferred_communication_method' => '',
+                      'preferred_language' => 'en_US',
                       'preferred_mail_format' => 'Both',
                       'first_name' => 'Anthony',
                       'middle_name' => 'J.',
                       'last_name' => 'Anderson',
+                      'prefix_id' => '3',
+                      'suffix_id' => '3',
+                      'formal_title' => '',
+                      'communication_style_id' => '',
                       'job_title' => '',
+                      'gender_id' => '',
                       'birth_date' => '',
                       'is_deceased' => 0,
                       'deceased_date' => '',
@@ -114,6 +121,10 @@ function activity_get_expectedresult(){
                       'im' => '',
                       'worldregion_id' => '',
                       'world_region' => '',
+                      'individual_prefix' => 'Mr.',
+                      'individual_suffix' => 'II',
+                      'communication_style' => '',
+                      'gender' => '',
                       'state_province_name' => '',
                       'state_province' => '',
                       'country' => '',
@@ -133,16 +144,16 @@ function activity_get_expectedresult(){
 * This example has been generated from the API test suite. The test that created it is called
 *
 * testActivityGetGoodID1 and can be found in
-* http://svn.civicrm.org/civicrm/trunk/tests/phpunit/CiviTest/api/v3/ActivityTest.php
+* https://github.com/civicrm/civicrm-core/blob/master/tests/phpunit/api/v3/ActivityTest.php
 *
 * You can see the outcome of the API tests at
-* http://tests.dev.civicrm.org/trunk/results-api_v3
+* https://test.civicrm.org/job/CiviCRM-master-git/
 *
 * To Learn about the API read
-* http://book.civicrm.org/developer/current/techniques/api/
+* http://wiki.civicrm.org/confluence/display/CRMDOC/Using+the+API
 *
-* and review the wiki at
-* http://wiki.civicrm.org/confluence/display/CRMDOC/CiviCRM+Public+APIs
+* Browse the api on your own site with the api explorer
+* http://MYSITE.ORG/path/to/civicrm/api/explorer
 *
 * Read more about testing here
 * http://wiki.civicrm.org/confluence/display/CRM/Testing
