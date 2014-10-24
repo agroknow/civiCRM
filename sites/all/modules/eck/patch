@@ -1,0 +1,216 @@
+diff --git a/eck.bundle.inc b/eck.bundle.inc
+index 4ec776d..71848ac 100644
+--- a/eck.bundle.inc
++++ b/eck.bundle.inc
+@@ -19,6 +19,23 @@ function eck__bundle__menu($entity_type) {
+   $path = eck__entity_type__path();
+   $menu = array();
+ 
++  // Dummy menu items so that entity translation will not complain about there
++  // not being a default.
++  // @todo: Remove these dummy items once issue https://drupal.org/node/2273189
++  // is resolved.
++  $menu["$entity_type->name/%"] = array(
++    'page callback' => FALSE,
++    'page arguments' => array(),
++    'access callback' => FALSE,
++    'access arguments' => array(),
++  );
++  $menu["$entity_type->name/%/edit"] = array(
++    'page callback' => FALSE,
++    'page arguments' => array(),
++    'access callback' => FALSE,
++    'access arguments' => array(),
++  );
++
+   // DELETE Entity Types.
+   $menu["{$path}/{$entity_type->name}/delete"] = array(
+     'title' => "Delete",
+diff --git a/eck.entity.inc b/eck.entity.inc
+index a297fec..6c2f41c 100644
+--- a/eck.entity.inc
++++ b/eck.entity.inc
+@@ -346,6 +346,12 @@ function eck__entity__form($form, &$form_state, $entity) {
+     '#value' => $entity,
+   );
+ 
++  $form['#entity_type'] = array(
++    '#type' => 'value',
++    '#value' => $entity->type,
++  );
++  $form_state[$entity->entityType()] = $entity;
++
+   // Property Widget Handling through property_info by entity api.
+   $property_info = entity_get_property_info($entity->entityType());
+   $properties = array();
+@@ -376,13 +382,23 @@ function eck__entity__form($form, &$form_state, $entity) {
+     }
+   }
+ 
+-  $form['submit'] = array(
++  $form['actions'] = array(
++    '#type' => 'actions',
++  );
++  $form['actions']['submit'] = array(
+     '#type' => 'submit',
+     '#weight' => 10000,
+     '#value' => t('Save'),
+   );
+ 
+-  field_attach_form($entity->entityType(), $entity, $form, $form_state);
++  $langcode = LANGUAGE_NONE;
++  if (module_exists('entity_translation') &&
++    entity_translation_enabled($entity->entityType())) {
++    $handler = entity_translation_get_handler($entity->entityType(), $entity);
++    $langcode = $handler->getFormLanguage();
++  }
++
++  field_attach_form($entity->entityType(), $entity, $form, $form_state, $langcode);
+ 
+   return $form;
+ }
+diff --git a/eck.entity_type.inc b/eck.entity_type.inc
+index a7c3b20..5a5fd3a 100644
+--- a/eck.entity_type.inc
++++ b/eck.entity_type.inc
+@@ -376,13 +376,54 @@ function eck__entity_type__info($entity_type) {
+     ),
+     // Inline entity form module integration.
+     'inline entity form' => array('controller' => 'EckInlineEntityFormController'),
++    'translation' => array(
++      'entity_translation' => array(
++        'class' => 'EntityTranslationECKHandler',
++        // This will be populated based on the bundles.
++       'path schemes' => array(
++          'default' => array(
++            'base path' => "$entity_type->name/%",
++            'path wildcard' => '%',
++          ),
++        ),
++      ),
++    ),
+   );
+ 
++  // Add title replacement support for translations.
++  if (isset($entity_type->properties['title'])) {
++    $info[$entity_type->name]['field replacement'] = array(
++      'title' => array(
++        'field' => array(
++          'type' => 'text',
++          'cardinality' => 1,
++          'translatable' => TRUE,
++        ),
++        'instance' => array(
++          'label' => t('Title'),
++          'required' => TRUE,
++          'settings' => array(
++            'text_processing' => 0,
++          ),
++          'widget' => array(
++            'weight' => -5,
++          ),
++        ),
++      ),
++    );
++  }
++
+   $eck_path = eck__entity_type__path();
+   foreach (Bundle::loadByEntityType($entity_type) as $bundle) {
+     $bundle_label = $bundle->label;
+     $path = "{$eck_path}/{$entity_type->name}/{$bundle->name}";
+ 
++    $info[$entity_type->name]['translation']['entity_translation']['path schemes'][$bundle->name] = array(
++      'base path' => "{$entity_type->name}/{$bundle->name}/%",
++      'translate path' => "{$entity_type->name}/{$bundle->name}/%/translate",
++      'path wildcard' => '%',
++    );
++
+     $info[$entity_type->name]['bundles'][$bundle->name] = array(
+       'label' => $bundle_label,
+       'admin' => array(
+diff --git a/eck.info b/eck.info
+index e6b8efa..24c0318 100644
+--- a/eck.info
++++ b/eck.info
+@@ -12,5 +12,8 @@ files[] = views/handlers/eck_views_handler_field_link.inc
+ files[] = views/handlers/eck_views_handler_field_link_edit.inc
+ files[] = views/handlers/eck_views_handler_field_link_delete.inc
+ 
++; Entity translation integration
++files[] = includes/translation.handler.eck.inc
++
+ ; Inline entity form integration
+ files[] = includes/eck.inline_entity_form.inc
+\ No newline at end of file
+diff --git a/eck.module b/eck.module
+index e3fde5e..1f4bc1a 100644
+--- a/eck.module
++++ b/eck.module
+@@ -892,3 +892,41 @@ function eck_system_info_alter(&$info, $file, $type) {
+     }
+   }
+ }
++
++/**
++ * Implements hook_field_extra_fields().
++ */
++function eck_field_extra_fields() {
++  module_load_include('inc', 'eck', 'eck.bundle');
++  $entity_types = EntityType::loadAll();
++
++  $extra = array();
++
++  foreach ($entity_types as $entity_type) {
++    // Don't add title overrides to bundles without titles.
++    if (!isset($entity_type->properties['title'])) { continue; }
++
++    foreach (Bundle::loadByEntityType($entity_type) as $bundle) {
++      // Add title as an extra field so that it may be overriden or translated
++      // as a field.
++      $extra[$entity_type->name][$bundle->name] = array(
++        'form' => array(
++          'title' => array(
++            'label' => t('Title'),
++            'description' => t('The displayed title of the entity.'),
++            'weight' => -5,
++          ),
++        ),
++        'display' => array(
++          'title' => array(
++            'label' => t('Title'),
++            'description' => t('The displayed title of the entity.'),
++            'weight' => -5,
++          ),
++        ),
++      );
++    }
++  }
++
++  return $extra;
++}
+diff --git a/includes/translation.handler.eck.inc b/includes/translation.handler.eck.inc
+new file mode 100644
+index 0000000..b1fda17
+--- /dev/null
++++ b/includes/translation.handler.eck.inc
+@@ -0,0 +1,20 @@
++<?php
++
++/**
++ * @file
++ * ECK translation handler for the entity translation module.
++ */
++
++/**
++ * ECK translation handler.
++ *
++ * Overrides default behaviours for ECK properties.
++ */
++class EntityTranslationECKHandler extends EntityTranslationDefaultHandler {
++  public function __construct($entity_type, $entity_info, $entity) {
++    parent::__construct($entity_type, $entity_info, $entity);
++
++    // Since we are using per-bundle paths then use the bundle's path scheme.
++    $this->setPathScheme($entity->type);
++  }
++}

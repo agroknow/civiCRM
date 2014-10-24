@@ -216,7 +216,7 @@ $databases['default']['default'] = array(
       'driver' => 'mysql',
      'database' => 'crm_civicrm',
       'username' => 'root',
-      'password' => 'r00t!',
+      'password' => '671671',
       'host' => 'localhost',
       'prefix' => '',
     );
